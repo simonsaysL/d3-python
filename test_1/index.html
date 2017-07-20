@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<style> /* set the CSS */
+
+.line {
+  fill: none;
+  stroke: steelblue;
+  stroke-width: 2px;
+}
+
+</style>
+<body>
+
+<!-- load the d3.js library -->     
+<script src="d3/d3.min.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+
+<script>
+
+//websocket get new data on close and when
+var ws = new WebSocket("ws://192.168.1.118:5678/")
+ws.onmessage = function (event) {
+var messages = document.getElementsByTagName('ul')[0],
+    message = document.createElement('li'),
+    content = document.createTextNode(event.data);
+//console.log(typeof(event.data));
+    var obj = jQuery.parseJSON(event.data);
+    var close = obj.volume
+    var when = obj.datetime;
+//  console.log(close,when);
+    var a = {"date":parseTime(when),"close":close};
+    data.push(a);
+    console.log(data);
+    updateLine(data);
+};
+
+// Preparo la prima sequenza di dati
+
+var data = [
+  {"date":"9:22:43.111","close":1.98},
+  {"date":"9:23:43.111","close":2},
+/*
+  {"date":"10:22:43.222","close":5.98},
+  {"date":"11:32:43.333","close":7.00},
+  {"date":"11:52:43.444","close":8.70},
+  {"date":"14:52:43.444","close":10.28},
+  {"date":"15:52:43.444","close":16.70},
+  {"date":"16:12:43.222","close":10.98},
+  {"date":"16:12:43.222","close":3.44},
+  {"date":"17:32:43.111","close":4.34},
+*/
+];
+
+// parse the date / time
+var parseTime = d3.timeParse("%H:%M:%S.%L");
+
+//per ogni elemento converto la data
+data.forEach(function(d) {
+  d.date = parseTime(d.date);
+  d.close = +d.close;
+});
+
+// Esempio di riferimento per il funzionamento
+//http://bl.ocks.org/d3noob/6bd13f974d6516f3e491
+
+// d3js 
+// Set the dimensions and margins of the graph
+var margin = {top: 20, right: 20, bottom: 30, left: 50},
+    width = 960 - margin.left - margin.right,
+    height = 500 - margin.top - margin.bottom;
+
+// Set the ranges
+var x = d3.scaleTime().range([0, width]);
+var y = d3.scaleLinear().range([height, 0]);
+
+// Define the axes
+var xAxis = d3.axisBottom(x)
+    .ticks(d3.timeMinute.every(30));
+
+var yAxis = d3.axisLeft(y);
+
+// Define the line
+var valueline = d3.line()
+    .x(function(d) { return x(d.date); })
+    .y(function(d) { return y(d.close); });
+
+// append the svg object to the body of the page
+// appends a 'group' element to 'svg'
+// moves the 'group' element to the top left margin
+var svg = d3.select("body")
+    .append("svg")
+        .attr("width", width + margin.left + margin.right)
+        .attr("height", height + margin.top + margin.bottom)
+    .append("g")
+        .attr("transform",
+            "translate(" + margin.left + "," + margin.top + ")");
+
+// funzione per prmo draw
+function drawLine(line_data)
+{
+    // Scale the range of the data
+    x.domain(d3.extent(line_data, function(d) { return d.date; }));
+    y.domain([0, d3.max(line_data, function(d) { return d.close; })]);
+
+    // Add the valueline path.
+    svg.append("path")
+        .attr("class", "line")
+        .attr("d", valueline(line_data));
+
+    // Add the X Axis
+    svg.append("g")
+        .attr("class", "x axis")
+        .attr("transform", "translate(0," + height + ")")
+        .call(xAxis);
+
+    // Add the Y Axis
+    svg.append("g")
+        .attr("class", "y axis")
+        .call(yAxis);
+}
+
+// funzione per aggiornamento
+function updateLine(line_data)
+{
+    // Scale the range of the data
+    x.domain(d3.extent(line_data, function(d) { return d.date; }));
+    y.domain([0, d3.max(line_data, function(d) { return d.close; })]);
+
+    // Select the section we want to apply our changes to
+    var svg = d3.select("body").transition();
+
+    // Make the changes
+    svg.select(".line")   // change the line
+            .duration(250)
+            .attr("d", valueline(line_data));
+    svg.select(".x.axis") // change the x axis
+            .duration(250)
+            .call(xAxis);
+    svg.select(".y.axis") // change the y axis
+            .duration(250)
+            .call(yAxis);
+}
+
+
+// Disegno i primi dati
+drawLine(data);
+
+// Preparo la prima sequenza di dati
+/*
+var data = [
+  {"date":"9:22:43.111","close":2.98},
+  {"date":"10:22:43.222","close":3.98},
+  {"date":"11:32:43.333","close":4.00},
+  {"date":"11:52:43.444","close":7.70},
+  {"date":"14:52:43.444","close":11.28},
+  {"date":"15:52:43.444","close":15.70},
+  {"date":"16:12:43.222","close":12.98},
+  {"date":"16:12:43.222","close":2.44},
+  {"date":"17:32:43.111","close":1.34},
+];
+
+// parse the date / time
+var parseTime = d3.timeParse("%H:%M:%S.%L");
+
+//per ogni elemento converto la data
+data.forEach(function(d) {
+  d.date = parseTime(d.date);
+  d.close = +d.close;
+});
+
+// Aggiorno i dati
+updateLine(data);
+*/
+</script>
+</body>
